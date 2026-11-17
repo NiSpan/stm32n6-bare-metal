@@ -1,0 +1,5 @@
+build/
+
+# Local only: full Arm/ST CMSIS reference copy (not include/CMSIS), clangd cache
+/projects/*/CMSIS/
+.cache/

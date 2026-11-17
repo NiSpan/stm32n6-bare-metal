@@ -1,0 +1,43 @@
+FROM debian:13
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gcc-arm-none-eabi \
+        binutils-arm-none-eabi \
+        gdb-multiarch \
+        make \
+        cmake \
+        ninja-build \
+        git \
+        usbutils \
+        ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# --- OpenOCD from upstream source (Debian's 0.12 package lacks STM32N6) ---
+# Build deps: host compiler + autotools, libusb for the ST-LINK, jimtcl (Tcl
+# interpreter OpenOCD scripts run on), texinfo for the docs step.
+# Set OPENOCD_REF to a tag/commit to pin a version: --build-arg OPENOCD_REF=<hash>
+ARG OPENOCD_REF=master
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential autoconf automake libtool pkg-config texinfo \
+        libusb-1.0-0-dev libjim-dev && \
+    git clone https://github.com/openocd-org/openocd.git /tmp/openocd && \
+    cd /tmp/openocd && \
+    git checkout ${OPENOCD_REF} && \
+    git submodule update --init --recursive && \
+    ./bootstrap && \
+    ./configure --prefix=/usr/local --enable-stlink && \
+    make -j"$(nproc)" && \
+    make install && \
+    cd / && rm -rf /tmp/openocd && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+RUN groupadd -g ${USER_GID} developer && useradd -m -u ${USER_UID} -g ${USER_GID} -s /bin/bash developer
+
+WORKDIR /workspace
+
+CMD ["/bin/bash"]

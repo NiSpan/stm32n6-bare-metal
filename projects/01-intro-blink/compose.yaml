@@ -1,0 +1,18 @@
+services:
+  stm32-dev:
+    build: .
+    image: stm32-dev:1.0
+    # Mount this folder at the SAME path as on the host (run compose from
+    # this folder, so ${PWD} is it). CMake writes absolute paths into
+    # build/compile_commands.json; identical paths let clangd on the host
+    # use that file directly.
+    working_dir: ${PWD}
+    volumes:
+      - ${PWD}:${PWD}
+    user: "${UID:-1000}:${GID:-1000}"
+    # Pass the host USB bus so the ST-LINK is visible inside.
+    # After unplugging/replugging the board, restart the container.
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+    stdin_open: true
+    tty: true
